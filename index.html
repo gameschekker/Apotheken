@@ -51,6 +51,14 @@
   .chip input{accent-color:var(--primary);width:16px;height:16px}
   .chip.on{border-color:var(--primary);background:#eaf4f1;color:var(--primary-ink)}
 
+  .presets{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+  .preset{font-family:var(--mono);font-size:13px;font-weight:500;cursor:pointer;
+    border:1px solid var(--line);background:#fbfdfc;color:var(--ink);
+    border-radius:8px;padding:7px 13px;transition:.12s;display:inline-flex;align-items:center;gap:7px}
+  .preset:hover{border-color:var(--primary);color:var(--primary);background:#eaf4f1}
+  .preset .n{font-size:11px;color:var(--muted)}
+  .preset:hover .n{color:var(--primary)}
+
   .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;align-items:center}
   button{font-family:var(--display);font-weight:600;font-size:14px;cursor:pointer;
     border-radius:10px;padding:11px 18px;border:1px solid transparent;transition:.12s}
@@ -114,6 +122,7 @@
         <label class="fld" for="pzns">Pharmazentralnummern (PZN)</label>
         <textarea id="pzns" placeholder="Eine PZN pro Zeile, z. B.&#10;17145955&#10;04875544&#10;13751848"></textarea>
         <p class="hint">7–8 Ziffern je PZN. Trennung per Zeilenumbruch, Komma oder Leerzeichen.</p>
+        <div class="presets" id="presets"></div>
       </div>
       <div class="col">
         <label class="fld">Shops</label>
@@ -178,6 +187,32 @@ function save(o){ try{localStorage.setItem(STORE,JSON.stringify(o))}catch(_){} }
 const saved = load();
 if(saved.endpoint) $("#endpoint").value = saved.endpoint;
 if(saved.pzns) $("#pzns").value = saved.pzns;
+
+// --- Voreingestellte PZN-Listen ---------------------------------
+// Weitere Buttons: einfach einen Eintrag { name, pzns:[...] } ergaenzen.
+const PRESETS = [
+  { name:"luforbec", pzns:[
+    "13358269","15746805","18290607","18010192","18981642","19553167",
+    "18718399","18718413","18718436","19200032","19200049","19200078",
+    "19196394","19196402","19196419","19196425","20182167","20182150","14145788"
+  ] },
+];
+
+(function renderPresets(){
+  const box = $("#presets");
+  PRESETS.forEach(p=>{
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "preset";
+    b.innerHTML = `${p.name} <span class="n">${p.pzns.length}</span>`;
+    b.addEventListener("click",()=>{
+      $("#pzns").value = p.pzns.join("\n");
+      save({endpoint:$("#endpoint").value.trim(), pzns:$("#pzns").value});
+      $("#pzns").focus();
+    });
+    box.appendChild(b);
+  });
+})();
 
 // Chip-Optik an Checkbox koppeln
 $("#shops").addEventListener("change",(e)=>{
