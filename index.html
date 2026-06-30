@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#0f5f54" />
+<title>PZN-Verfügbarkeit · Apotheken-Monitor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#eef2f1; --surface:#ffffff; --ink:#102a26; --muted:#5f706c;
+    --line:#dde5e3; --primary:#0f5f54; --primary-ink:#0b463e;
+    --ok:#157f4e; --ok-bg:#e4f3ea; --no:#b23a2e; --no-bg:#f8e7e4;
+    --warn:#9a6b12; --warn-bg:#f6edd9; --grey:#6b7b77; --grey-bg:#eceeed;
+    --display:"Space Grotesk",system-ui,sans-serif;
+    --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+    --body:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:var(--bg);color:var(--ink);font-family:var(--body);
+    line-height:1.5;-webkit-font-smoothing:antialiased;padding:0 0 64px}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 20px}
+
+  header{border-bottom:1px solid var(--line);background:var(--surface)}
+  .head{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;padding:22px 0 18px}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.22em;
+    text-transform:uppercase;color:var(--primary);font-weight:600}
+  h1{font-family:var(--display);font-weight:700;font-size:clamp(22px,4vw,30px);
+    margin:4px 0 0;letter-spacing:-.01em}
+  .sub{color:var(--muted);font-size:14px;margin-top:2px}
+
+  .panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;
+    padding:18px;margin-top:22px}
+  .panel h2{font-family:var(--display);font-size:13px;font-weight:600;margin:0 0 12px;
+    text-transform:uppercase;letter-spacing:.12em;color:var(--muted)}
+  label.fld{display:block;font-size:13px;font-weight:600;margin:0 0 6px;color:var(--ink)}
+  .hint{font-size:12px;color:var(--muted);margin:6px 0 0}
+  textarea,input[type=url]{width:100%;font-family:var(--mono);font-size:14px;color:var(--ink);
+    background:#fbfdfc;border:1px solid var(--line);border-radius:10px;padding:11px 12px}
+  textarea{min-height:120px;resize:vertical;line-height:1.7}
+  textarea:focus,input:focus{outline:2px solid var(--primary);outline-offset:0;border-color:var(--primary)}
+
+  .row{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-end}
+  .col{flex:1 1 280px;min-width:240px}
+  .shops{display:flex;gap:10px;flex-wrap:wrap}
+  .chip{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:999px;
+    padding:8px 14px;font-size:14px;font-weight:600;cursor:pointer;user-select:none;background:#fbfdfc}
+  .chip input{accent-color:var(--primary);width:16px;height:16px}
+  .chip.on{border-color:var(--primary);background:#eaf4f1;color:var(--primary-ink)}
+
+  .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;align-items:center}
+  button{font-family:var(--display);font-weight:600;font-size:14px;cursor:pointer;
+    border-radius:10px;padding:11px 18px;border:1px solid transparent;transition:.12s}
+  .btn-primary{background:var(--primary);color:#fff}
+  .btn-primary:hover{background:var(--primary-ink)}
+  .btn-primary:disabled{background:#9bb8b1;cursor:not-allowed}
+  .btn-ghost{background:transparent;border-color:var(--line);color:var(--ink)}
+  .btn-ghost:hover{border-color:var(--primary);color:var(--primary)}
+  .btn-ghost:disabled{opacity:.45;cursor:not-allowed}
+  .spacer{flex:1}
+
+  .progress{height:4px;background:var(--line);border-radius:4px;overflow:hidden;margin-top:16px;display:none}
+  .progress.show{display:block}
+  .bar{height:100%;width:0;background:var(--primary);transition:width .25s ease}
+
+  table{width:100%;border-collapse:collapse;margin-top:6px;font-size:14px}
+  th,td{text-align:left;padding:11px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--muted);font-weight:600}
+  td.pzn{font-family:var(--mono);font-weight:600;white-space:nowrap}
+  td.prod{min-width:180px}
+  .price{font-family:var(--mono);white-space:nowrap}
+  a.prodlink{color:var(--primary);text-decoration:none;font-size:12px;font-family:var(--mono)}
+  a.prodlink:hover{text-decoration:underline}
+  tr.added{animation:fade .35s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:none}}
+
+  .pill{display:inline-flex;align-items:center;gap:7px;font-family:var(--mono);font-size:12px;
+    font-weight:600;padding:4px 10px;border-radius:999px;white-space:nowrap}
+  .dot{width:8px;height:8px;border-radius:50%}
+  .s-verfuegbar{background:var(--ok-bg);color:var(--ok)} .s-verfuegbar .dot{background:var(--ok)}
+  .s-nicht_verfuegbar{background:var(--no-bg);color:var(--no)} .s-nicht_verfuegbar .dot{background:var(--no)}
+  .s-ausser_handel{background:var(--warn-bg);color:var(--warn)} .s-ausser_handel .dot{background:var(--warn)}
+  .s-nicht_gefunden,.s-unbekannt,.s-fehler{background:var(--grey-bg);color:var(--grey)}
+  .s-nicht_gefunden .dot,.s-unbekannt .dot,.s-fehler .dot{background:var(--grey)}
+
+  .empty{color:var(--muted);font-size:14px;padding:26px 4px;text-align:center}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:14px;font-size:12px;color:var(--muted)}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  footer{margin-top:26px;font-size:12px;color:var(--muted);line-height:1.7}
+  .scroll{overflow-x:auto}
+  @media(max-width:560px){ th.hide,td.hide{display:none} }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap head">
+    <div>
+      <div class="eyebrow">Versandapotheken · Verfügbarkeit</div>
+      <h1>PZN-Verfügbarkeitsmonitor</h1>
+      <div class="sub">PZN eingeben — Status bei ShopApotheke &amp; DocMorris abrufen und exportieren.</div>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="panel">
+    <h2>Abfrage</h2>
+    <div class="row">
+      <div class="col">
+        <label class="fld" for="pzns">Pharmazentralnummern (PZN)</label>
+        <textarea id="pzns" placeholder="Eine PZN pro Zeile, z. B.&#10;17145955&#10;04875544&#10;13751848"></textarea>
+        <p class="hint">7–8 Ziffern je PZN. Trennung per Zeilenumbruch, Komma oder Leerzeichen.</p>
+      </div>
+      <div class="col">
+        <label class="fld">Shops</label>
+        <div class="shops" id="shops">
+          <label class="chip on"><input type="checkbox" value="shopapotheke" checked> ShopApotheke</label>
+          <label class="chip on"><input type="checkbox" value="docmorris" checked> DocMorris</label>
+        </div>
+        <label class="fld" style="margin-top:16px" for="endpoint">Worker-Endpunkt</label>
+        <input type="url" id="endpoint" placeholder="https://dein-worker.deinsubdomain.workers.dev" />
+        <p class="hint">URL des eigenen Cloudflare Workers. Wird lokal gespeichert.</p>
+      </div>
+    </div>
+    <div class="actions">
+      <button class="btn-primary" id="run">Verfügbarkeit prüfen</button>
+      <button class="btn-ghost" id="csv" disabled>CSV exportieren</button>
+      <button class="btn-ghost" id="json" disabled>JSON exportieren</button>
+      <span class="spacer"></span>
+      <span class="hint" id="count"></span>
+    </div>
+    <div class="progress" id="progress"><div class="bar" id="bar"></div></div>
+  </section>
+
+  <section class="panel">
+    <h2>Ergebnisse</h2>
+    <div class="scroll">
+      <table id="table">
+        <thead>
+          <tr>
+            <th>PZN</th><th>Produkt</th>
+            <th>ShopApotheke</th><th class="hide">Preis</th>
+            <th>DocMorris</th><th class="hide">Preis</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <div class="empty" id="empty">Noch keine Abfrage. Oben PZN eingeben und prüfen.</div>
+    <div class="legend">
+      <span><span class="dot" style="background:var(--ok)"></span> verfügbar</span>
+      <span><span class="dot" style="background:var(--no)"></span> nicht verfügbar</span>
+      <span><span class="dot" style="background:var(--warn)"></span> außer Handel</span>
+      <span><span class="dot" style="background:var(--grey)"></span> nicht gefunden / unbekannt</span>
+    </div>
+  </section>
+
+  <footer>
+    Statusangaben werden live von den Shop-Seiten gelesen und können sich jederzeit ändern; ohne Gewähr.
+    Bitte sparsam und niedrigfrequent abfragen.
+  </footer>
+</main>
+
+<script>
+const $ = (s)=>document.querySelector(s);
+const STORE = "pzn-monitor";
+const LABELS = {verfuegbar:"verfügbar",nicht_verfuegbar:"nicht verfügbar",ausser_handel:"außer Handel",
+  nicht_gefunden:"nicht gefunden",unbekannt:"unbekannt",fehler:"Fehler"};
+
+// --- sicherer localStorage-Zugriff (faellt in Sandboxes lautlos zurueck) ---
+function load(){ try{return JSON.parse(localStorage.getItem(STORE))||{}}catch(_){return{}} }
+function save(o){ try{localStorage.setItem(STORE,JSON.stringify(o))}catch(_){} }
+
+const saved = load();
+if(saved.endpoint) $("#endpoint").value = saved.endpoint;
+if(saved.pzns) $("#pzns").value = saved.pzns;
+
+// Chip-Optik an Checkbox koppeln
+$("#shops").addEventListener("change",(e)=>{
+  e.target.closest(".chip").classList.toggle("on",e.target.checked);
+});
+
+let lastResults = [];   // flache Liste
+let lastRows = [];      // pivotiert nach PZN (fuer Export)
+
+function parsePzns(raw){
+  const seen = new Set(), out = [];
+  raw.split(/[\s,;]+/).forEach(x=>{
+    const d = x.replace(/\D/g,"");
+    if(d.length>=6 && d.length<=8){ const p=d.padStart(8,"0"); if(!seen.has(p)){seen.add(p);out.push(p);} }
+  });
+  return out;
+}
+
+function statusPill(r){
+  if(!r) return '<span class="pill s-unbekannt"><span class="dot"></span>—</span>';
+  const s = r.status||"unbekannt";
+  const t = r.error ? "Fehler" : (LABELS[s]||s);
+  return `<span class="pill s-${s}" title="${(r.error||r.url||"").replace(/"/g,'')}"><span class="dot"></span>${t}</span>`;
+}
+function priceCell(r){
+  if(!r||!r.price) return '<span class="price" style="color:var(--muted)">—</span>';
+  const v = String(r.price).replace(".",",");
+  return `<span class="price">${v} €</span>`;
+}
+function linkCell(r){
+  if(!r||!r.url) return "";
+  return `<div><a class="prodlink" href="${r.url}" target="_blank" rel="noopener">öffnen ↗</a></div>`;
+}
+
+function renderRow(pzn, byShop){
+  const sa = byShop.shopapotheke, dm = byShop.docmorris;
+  const name = (sa&&sa.name) || (dm&&dm.name) || "—";
+  const tr = document.createElement("tr");
+  tr.className = "added";
+  tr.innerHTML =
+    `<td class="pzn">${pzn}</td>`+
+    `<td class="prod">${name}</td>`+
+    `<td>${sa?statusPill(sa)+linkCell(sa):'<span class="pill s-unbekannt"><span class="dot"></span>—</span>'}</td>`+
+    `<td class="hide">${priceCell(sa)}</td>`+
+    `<td>${dm?statusPill(dm)+linkCell(dm):'<span class="pill s-unbekannt"><span class="dot"></span>—</span>'}</td>`+
+    `<td class="hide">${priceCell(dm)}</td>`;
+  $("#tbody").appendChild(tr);
+}
+
+async function run(){
+  const endpoint = $("#endpoint").value.trim().replace(/\/+$/,"");
+  const pzns = parsePzns($("#pzns").value);
+  const shops = [...document.querySelectorAll("#shops input:checked")].map(i=>i.value);
+
+  if(!endpoint){ alert("Bitte zuerst die Worker-URL eintragen."); return; }
+  if(!pzns.length){ alert("Bitte mindestens eine gültige PZN eingeben."); return; }
+  if(!shops.length){ alert("Bitte mindestens einen Shop auswählen."); return; }
+
+  save({endpoint, pzns:$("#pzns").value});
+
+  // UI vorbereiten
+  $("#tbody").innerHTML = "";
+  $("#empty").style.display = "none";
+  $("#progress").classList.add("show");
+  $("#bar").style.width = "0%";
+  $("#run").disabled = true; $("#csv").disabled = true; $("#json").disabled = true;
+  lastResults = []; lastRows = [];
+
+  const CHUNK = 3;
+  let done = 0;
+  try{
+    for(let i=0;i<pzns.length;i+=CHUNK){
+      const batch = pzns.slice(i,i+CHUNK);
+      $("#count").textContent = `${done}/${pzns.length} geprüft …`;
+      let data;
+      try{
+        const res = await fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({pzns:batch,shops})});
+        data = await res.json();
+      }catch(err){
+        // ganzer Batch fehlgeschlagen -> als Fehlerzeilen darstellen
+        data = {results: batch.flatMap(p=>shops.map(s=>({pzn:p,shop:s,status:"fehler",error:String(err.message||err)})))};
+      }
+      (data.results||[]).forEach(r=>lastResults.push(r));
+
+      // pro PZN dieses Batches eine Zeile rendern
+      batch.forEach(p=>{
+        const byShop = {};
+        (data.results||[]).filter(r=>r.pzn===p).forEach(r=>byShop[r.shop]=r);
+        lastRows.push({pzn:p, byShop});
+        renderRow(p, byShop);
+      });
+
+      done += batch.length;
+      $("#bar").style.width = Math.round(done/pzns.length*100)+"%";
+    }
+    $("#count").textContent = `${done} PZN geprüft`;
+    $("#csv").disabled = false; $("#json").disabled = false;
+  } finally {
+    $("#run").disabled = false;
+    setTimeout(()=>$("#progress").classList.remove("show"), 600);
+  }
+}
+
+// --- Export ---------------------------------------------------
+function download(name, text, type){
+  const blob = new Blob([text],{type});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
+}
+function csvCell(v){ v=(v==null?"":String(v)); return /[";\n]/.test(v) ? '"'+v.replace(/"/g,'""')+'"' : v; }
+
+function exportCsv(){
+  const stamp = new Date().toLocaleString("de-DE");
+  const head = ["PZN","Produkt",
+    "ShopApotheke Status","ShopApotheke Preis (€)","ShopApotheke URL",
+    "DocMorris Status","DocMorris Preis (€)","DocMorris URL","Abgefragt am"];
+  const lines = [head.map(csvCell).join(";")];
+  lastRows.forEach(({pzn,byShop})=>{
+    const sa=byShop.shopapotheke||{}, dm=byShop.docmorris||{};
+    const name=(sa.name||dm.name||"");
+    lines.push([
+      pzn, name,
+      LABELS[sa.status]||sa.status||"", sa.price?String(sa.price).replace(".",","):"", sa.url||"",
+      LABELS[dm.status]||dm.status||"", dm.price?String(dm.price).replace(".",","):"", dm.url||"",
+      stamp
+    ].map(csvCell).join(";"));
+  });
+  // BOM, damit Excel UTF-8/Umlaute korrekt liest
+  download("pzn-verfuegbarkeit.csv", "\uFEFF"+lines.join("\r\n"), "text/csv;charset=utf-8");
+}
+function exportJson(){
+  download("pzn-verfuegbarkeit.json",
+    JSON.stringify({exportiert:new Date().toISOString(), results:lastResults}, null, 2),
+    "application/json");
+}
+
+$("#run").addEventListener("click", run);
+$("#csv").addEventListener("click", exportCsv);
+$("#json").addEventListener("click", exportJson);
+$("#pzns").addEventListener("keydown",(e)=>{ if((e.metaKey||e.ctrlKey)&&e.key==="Enter") run(); });
+</script>
+</body>
+</html>
